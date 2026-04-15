@@ -94,9 +94,10 @@
 | 层 | 技术 |
 | :--- | :--- |
 | **框架** | Next.js 16.2 (App Router + Turbopack)，React 19.2 |
-| **LLM** | Claude Sonnet 4.6（可通过 `ANTHROPIC_MODEL` 切换 Opus / Haiku） |
-| **SDK** | `@anthropic-ai/sdk` 0.88 · 官方流式 SSE |
-| **文档解析** | `pdf-parse`（PDF），`mammoth`（Word），Claude Vision（图片 OCR） |
+| **LLM** | **双 provider 抽象层**：Claude (Anthropic) 或 Kimi (Moonshot),UI 里一键切换 |
+| **默认模型** | Claude: `claude-sonnet-4-6` / Kimi: `kimi-k2-thinking`(思考模型) |
+| **SDK** | `@anthropic-ai/sdk` 0.88 (Claude) · 纯 `fetch` OpenAI-compatible (Kimi,零 SDK 依赖) |
+| **文档解析** | `pdf-parse`（PDF）、`mammoth`/`officeparser`（docx/pptx）、`word-extractor`（旧版 .doc）、Claude Vision（图片 OCR） |
 | **UI** | Tailwind 4 + OKLCH 自定义色板（朱砂 / 竹 / 靛 / 金 / 宣纸），Noto Serif SC 衬线字体 |
 | **状态** | React hooks · 单文件 JSON 持久化（MVP）· 会迁 SQLite |
 | **网络** | 内置 undici EnvHttpProxyAgent，自动拾取 `https_proxy` 环境变量（国内网络友好） |
@@ -109,94 +110,206 @@ src/
 │   ├── api/
 │   │   ├── chat/route.ts              # 聊天流式端点，支持 AbortSignal
 │   │   ├── tool/route.ts              # 三件套统一端点
+│   │   ├── followups/route.ts         # 每次回答后生成 3 个动态追问
+│   │   ├── settings/route.ts          # UI 里配 provider/API key 的后端
 │   │   ├── upload/route.ts            # 文件上传 + 解析 + 分类
 │   │   ├── documents/                 # CRUD 文档
 │   │   └── notebooks/[id]/messages    # 聊天历史 GET / DELETE
 │   ├── notebooks/[id]/page.tsx        # 三栏工作台主页
 │   └── page.tsx                       # 笔记本列表首页
 ├── components/
-│   ├── chat-panel.tsx                 # 中栏（流式 + 停止 + 历史 + IME）
+│   ├── chat-panel.tsx                 # 中栏（流式 + 停止 + 历史 + IME + 追问胶囊）
 │   ├── sources-panel.tsx              # 左栏
-│   ├── studio-panel.tsx               # 右栏
+│   ├── studio-panel.tsx               # 右栏（3 活 + 3 待开发)
 │   ├── tool-slide-over.tsx            # 三个工具 modal
-│   ├── markdown.tsx                   # 共享 Markdown 渲染器
+│   ├── profile-menu.tsx               # 右上角姓氏 / AI 配置入口
+│   ├── settings-modal.tsx             # AI 配置模态框
+│   ├── markdown.tsx                   # 共享 Markdown 渲染器(含表格)
 │   └── add-source-modal.tsx           # 上传模态框（拖拽 / URL / 纯文本）
-├── lib/
-│   ├── anthropic.ts                   # Claude 客户端 + system prompt
-│   └── store.ts                       # 文件后端存储（data/store.json）
-└── instrumentation.ts                 # 启动时配置网络代理
+└── lib/
+    ├── llm/
+    │   ├── types.ts                   # 共享 LLMProvider 接口
+    │   ├── anthropic.ts               # AnthropicProvider
+    │   ├── moonshot.ts                # MoonshotProvider (Kimi)
+    │   └── index.ts                   # 工厂 + 根据设置选 provider
+    ├── app-settings.ts                # 读写 data/settings.json
+    ├── prompts.ts                     # 系统提示词 + 称呼指令
+    ├── profile.ts                     # 客户端姓氏 (localStorage)
+    └── store.ts                       # 笔记本/文档/历史 (data/store.json)
 ```
 
 ---
 
-## 四、快速开始
+## 四、快速开始（首次 15 分钟跑通）
 
-### 4.1 先决条件
+面向**第一次克隆本项目到自己电脑上的老师**。推荐用 **Kimi (Moonshot)**,国内直连,不需要翻墙。不想改任何配置文件也可以,**API Key 直接在浏览器里填**。
 
-- Node.js ≥ 20
-- Anthropic API Key（https://console.anthropic.com/settings/keys）
-- 国内网络建议配置代理（Clash / Surge 默认 `http://127.0.0.1:7890`）
+### 4.1 准备环境（一次性,5 分钟）
 
-### 4.2 安装 & 运行
+需要装 3 样东西:
+
+| 工具 | 用途 | 检查是否装好 | 没装的话 |
+| :--- | :--- | :--- | :--- |
+| **Node.js 20+** | 跑项目 | 终端输入 `node -v`,看到 `v20.x` 或更高 | 去 https://nodejs.org 下载 LTS 版,一路下一步 |
+| **Git** | 下载项目 | 终端输入 `git --version` | Mac: 装 Xcode Command Line Tools (`xcode-select --install`)<br>Windows: 装 https://git-scm.com |
+| **一个 AI API Key** | 调模型 | 看下面 ↓ | 看下面 ↓ |
+
+**申请 AI API Key**(二选一):
+
+- **Kimi (推荐,国内教师用这个)**:到 https://platform.moonshot.cn 注册 → 控制台 → API Key 管理 → 新建 → 复制备用。新用户有免费额度够试几百次对话。
+- **Claude (海外老师或有代理的)**:到 https://console.anthropic.com/settings/keys 注册 → 充值(最低 $5) → 复制备用。国内需要开**全局代理**才能连上。
+
+### 4.2 下载 + 安装项目(3 分钟)
+
+打开终端,执行:
 
 ```bash
+# 1. 下载项目到当前目录(会新建 school-better 文件夹)
 git clone https://github.com/willmusubi/school-better.git
+
+# 2. 进入项目目录
 cd school-better
+
+# 3. 安装依赖(第一次会下几百个包,国内可能需要几分钟)
 npm install
 ```
 
-手动新建 `.env.local`。支持两套 LLM 提供方，默认 Claude，国内部署可切换到 Kimi（Moonshot）。
+> **国内 npm install 慢?** 换淘宝镜像: `npm config set registry https://registry.npmmirror.com` 然后再 `npm install`。
 
-**方案 A · Claude（默认，国内需代理）**
-
-```bash
-LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxx
-
-# 国内代理（SDK 会自动拾取）
-https_proxy=http://127.0.0.1:7890
-http_proxy=http://127.0.0.1:7890
-```
-
-**方案 B · Kimi K2 Thinking（国内直连）**
-
-```bash
-LLM_PROVIDER=moonshot
-MOONSHOT_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
-# 国内平台: https://api.moonshot.cn/v1  · 海外: https://api.moonshot.ai/v1（默认）
-MOONSHOT_BASE_URL=https://api.moonshot.cn/v1
-
-# 图片 OCR 目前仍走 Anthropic。如果你会上传图片,也填上:
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxx
-```
-
-**可选：自定义模型**
-
-```bash
-# Anthropic 默认: chat=claude-sonnet-4-6  followup=claude-haiku-4-5-20251001
-# Moonshot  默认: chat=kimi-k2-thinking   followup=kimi-k2-turbo-preview
-# LLM_CHAT_MODEL=kimi-k2.5
-# LLM_FOLLOWUP_MODEL=kimi-k2-turbo-preview
-# LLM_CLASSIFY_MODEL=kimi-k2-turbo-preview
-
-# 可选：提高上传大小限制（默认 25 MB）
-# NEXT_PUBLIC_MAX_UPLOAD_MB=50
-```
-
-启动：
+### 4.3 启动服务(1 分钟)
 
 ```bash
 npm run dev
-# → http://localhost:3000
 ```
 
-### 4.3 第一次使用
+终端会打印类似:
+```
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://localhost:3000
+✓ Ready in 475ms
+```
 
-1. 打开 `http://localhost:3000`，系统预置了一个"高中语文·入门笔记本"
-2. 进入笔记本 → 左栏点"添加资料"→ 拖几份真实教材/试卷/教案进来
-3. 等待左栏图标由 ⏳ 变为 ✓（AI 后台解析 + 分类需 10-60 秒/份）
-4. 中栏随便问一句："帮我分析这篇课文的论证思路"
-5. 右栏点"测验生成"，看看 AI 基于你的教材出题的效果
+**保持这个终端开着不要关**。打开浏览器访问 http://localhost:3000 就能看到首页。
+
+### 4.4 在 UI 里配置 API Key(2 分钟)
+
+打开首页后,你会看到笔记本列表。**还不能对话,先配 Key:**
+
+1. 点击**右上角头像**(灰色 `+`)
+2. 在弹出框底部点 **"AI 配置 →"**
+3. 在 AI 配置模态框里:
+   - **使用哪个 AI** —— 选 **Kimi (Moonshot)** 或 **Claude (Anthropic)**
+   - **API Key** —— 把第 4.1 步复制的 Key 粘进来
+   - **Moonshot 接入地址**(只 Kimi 需要)—— 国内选 **国内 · api.moonshot.cn**
+   - **模型选择** —— 留默认就行(Kimi 默认是 `kimi-k2-thinking`)
+4. 点 **保存**
+
+> **可选:在头像 popover 里填你的姓(例如"王"),AI 会叫你"王老师"。**
+
+### 4.5 第一次对话(5 分钟见效)
+
+1. 回到首页,系统预置了一个"**高中语文·入门笔记本**"。也可以点右上角 **新建笔记本** 开一个新的
+2. 进入笔记本 → 左栏点 **"添加资料"** → 拖几份真实教材/试卷/教案(PDF / docx / pptx / doc / 图片都行)
+3. 等待左栏图标由 ⏳(解析中) 变为 ✓(就绪)。每份文档 AI 自动判断是教材/试卷/教案,并生成 50 字摘要,通常 10-60 秒
+4. 中栏随便问一句,比如"**总结我上传的资料要点**"或"**帮我分析《青蒿素》这篇课文的论证思路**"
+5. 回答完成后,下方会出现 3 个**动态追问按钮**,点一下自动作为下一条消息发送
+6. 右栏点 **"测验生成"** / **"模拟学生提问"** / **"课程设计"** 任一工具,体验基于你知识库的一键生成
+
+完整走一遍应该在 15 分钟内。如果卡住了看下面。
+
+### 4.6 常见问题排查
+
+<details>
+<summary><b>打开 http://localhost:3000 显示"无法访问此网站"</b></summary>
+
+- 确认第 4.3 步终端是开着的,且输出里有 `Ready in ...`
+- 如果终端显示 **Port 3000 is in use**,它会自动换到 3001 或 3002,按终端提示的实际地址打开就行
+</details>
+
+<details>
+<summary><b>保存 API Key 时提示"API Key 只能包含可见 ASCII 字符"</b></summary>
+
+你可能**不小心把别的内容(比如错误信息、链接)粘进了 Key 输入框**。
+回到控制台重新复制一次真 Key,只包含 `sk-xxxxxxxxxxxx` 这样的字符,不要任何中文、空格、换行。
+</details>
+
+<details>
+<summary><b>对话时报 "Moonshot 400 Bad Request: invalid temperature"</b></summary>
+
+已修复。如果还遇到,更新到最新代码:
+```bash
+git pull
+npm install
+# Ctrl+C 停掉 dev,重新 npm run dev
+```
+</details>
+
+<details>
+<summary><b>对话时报 "Moonshot 404 Not Found the model ..."</b></summary>
+
+选了不存在的模型。去 **AI 配置 → 模型选择**,选 **"使用默认"** 或从下拉里挑一个:
+- `kimi-k2-thinking`(默认,强制思考)
+- `kimi-k2.5`(最新,思考默认开 —— 注意不是 `kimi-k2.5-thinking`!)
+- `kimi-k2-turbo-preview`(快速,不思考)
+</details>
+
+<details>
+<summary><b>Claude 连不上,报 ECONNREFUSED / 超时</b></summary>
+
+国内直连 `api.anthropic.com` 会被墙。两个选择:
+
+- 切 Kimi: AI 配置里把 provider 改成 **Moonshot**,填 Kimi Key,base url 选国内 `api.moonshot.cn`
+- 配代理: 开全局代理后,在**项目根目录**新建 `.env.local`,加一行 `https_proxy=http://127.0.0.1:7890`(改成你代理软件的实际端口),重启 dev server
+</details>
+
+<details>
+<summary><b>上传的 .doc 文件解析失败</b></summary>
+
+`.doc`(2003 年 Word)有两种可能:
+- 文件损坏:另存为 `.docx` 再上传
+- 文件里全是图片扫描:先用系统自带的"图片 OCR"导出为文字,或直接上传为图片走 Claude Vision
+</details>
+
+<details>
+<summary><b>npm install 卡在某个包,或报 Permission denied</b></summary>
+
+- 卡住: 换镜像 `npm config set registry https://registry.npmmirror.com` 后重试
+- 权限: Mac/Linux 不要用 `sudo npm install`,如果以前 sudo 过,修复权限 `sudo chown -R $(whoami) ~/.npm`
+</details>
+
+<details>
+<summary><b>我电脑上还是装不上 Node.js / git,就是不会用终端</b></summary>
+
+先不用 clone 本地,直接联系作者(见下方**八、贡献 & 反馈**)用 **在线部署版** 或安排远程帮你装。本项目面向零前端经验的老师,这块正在找更易用的发行方式。
+</details>
+
+### 4.7 高级:用环境变量代替 UI 配置(工程师可跳这里)
+
+如果想让配置写在文件里、可以 git 管理或批量分发(**不推荐把真 Key 入库**),新建项目根目录的 `.env.local`:
+
+```bash
+# provider: anthropic | moonshot
+LLM_PROVIDER=moonshot
+
+# Moonshot / Kimi
+MOONSHOT_API_KEY=sk-xxxxxxxxxxxxxxxx
+MOONSHOT_BASE_URL=https://api.moonshot.cn/v1
+
+# Anthropic(图片 OCR 仍用这个,所以即使 LLM_PROVIDER=moonshot 也建议填)
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
+
+# 可选:模型覆盖
+# LLM_CHAT_MODEL=kimi-k2.5
+# LLM_FOLLOWUP_MODEL=kimi-k2-turbo-preview
+
+# 可选:上传大小限制(默认 25MB)
+# NEXT_PUBLIC_MAX_UPLOAD_MB=50
+
+# 可选:国内代理(只 Claude 需要)
+# https_proxy=http://127.0.0.1:7890
+```
+
+**优先级:UI 里保存的设置 > 环境变量 > 内置默认**。所以 UI 里一经保存,环境变量会被覆盖。
 
 ---
 
