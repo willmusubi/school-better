@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClient, MODEL, SYSTEM_PROMPT, teacherAddressLine } from "@/lib/anthropic";
+import { getLLM, getChatModel } from "@/lib/llm";
+import { SYSTEM_PROMPT, teacherAddressLine } from "@/lib/prompts";
 import { getDocumentContext, addMessage } from "@/lib/store";
 
 const newId = () =>
@@ -31,28 +32,18 @@ export async function POST(req: NextRequest) {
         : "";
     const systemWithContext = `${SYSTEM_PROMPT}${addressLine ? `\n\n${addressLine}` : ""}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`;
 
-    const client = getClient();
-
-    let stream;
-    try {
-      stream = await client.messages.stream(
-        {
-          model: MODEL,
-          max_tokens: 4096,
-          system: systemWithContext,
-          messages: [{ role: "user", content: message }],
-        },
-        // Forward client disconnect to Anthropic so we stop burning tokens.
-        { signal: req.signal }
-      );
-    } catch (apiError: unknown) {
-      console.error("Claude API connection error:", apiError);
-      const errMsg = apiError instanceof Error ? apiError.message : String(apiError);
-      return NextResponse.json(
-        { error: `Claude API连接失败: ${errMsg}. 请检查API Key和网络代理设置。` },
-        { status: 502 }
-      );
-    }
+    const llm = getLLM();
+    // The provider may throw before any chunk is produced (bad auth, network,
+    // misconfig). We only get a stream-like async iterable here — actual HTTP
+    // calls happen inside the for-await loop below. Errors from there are
+    // caught by the stream error branch.
+    const stream = llm.streamChat({
+      model: getChatModel(),
+      maxTokens: 4096,
+      system: systemWithContext,
+      messages: [{ role: "user", content: message }],
+      signal: req.signal,
+    });
 
     const encoder = new TextEncoder();
     let fullResponse = "";
@@ -83,22 +74,16 @@ export async function POST(req: NextRequest) {
         req.signal.addEventListener("abort", onAbort, { once: true });
 
         try {
-          for await (const event of stream) {
+          for await (const { text } of stream) {
             if (req.signal.aborted) break;
-            if (
-              event.type === "content_block_delta" &&
-              event.delta.type === "text_delta"
-            ) {
-              const text = event.delta.text;
-              fullResponse += text;
-              try {
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
-                );
-              } catch {
-                // Controller already closed (client gone).
-                break;
-              }
+            fullResponse += text;
+            try {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
+              );
+            } catch {
+              // Controller already closed (client gone).
+              break;
             }
           }
 
@@ -115,13 +100,13 @@ export async function POST(req: NextRequest) {
             persistAssistant("\n\n[已停止生成]");
           } else {
             console.error("Stream error:", streamError);
+            const msg = streamError instanceof Error ? streamError.message : String(streamError);
+            const hint = `\n\n[LLM 调用失败: ${msg.slice(0, 200)}]`;
             // Save what we have so it doesn't vanish on reload.
-            persistAssistant("\n\n[流式传输中断,请重试]");
+            persistAssistant(hint);
             try {
               controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ text: "\n\n[流式传输中断,请重试]" })}\n\n`
-                )
+                encoder.encode(`data: ${JSON.stringify({ text: hint })}\n\n`)
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             } catch { /* closed */ }

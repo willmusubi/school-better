@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClient, MODEL, teacherAddressLine } from "@/lib/anthropic";
+import { getLLM, getChatModel } from "@/lib/llm";
+import { teacherAddressLine } from "@/lib/prompts";
 import { getDocumentContext } from "@/lib/store";
 
 const TOOL_PROMPTS: Record<string, (params: Record<string, string>) => string> = {
@@ -96,27 +97,14 @@ export async function POST(req: NextRequest) {
     const addressLine = teacherAddressLine(teacherSurname);
     const addressingSuffix = addressLine ? `\n\n${addressLine}` : "";
 
-    const client = getClient();
-
-    let stream;
-    try {
-      stream = await client.messages.stream(
-        {
-          model: MODEL,
-          max_tokens: 8192,
-          system: `${toolPrompt}${addressingSuffix}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`,
-          messages: [{ role: "user", content: "请开始生成。" }],
-        },
-        { signal: req.signal }
-      );
-    } catch (apiError: unknown) {
-      console.error("Claude API connection error:", apiError);
-      const errMsg = apiError instanceof Error ? apiError.message : String(apiError);
-      return NextResponse.json(
-        { error: `Claude API连接失败: ${errMsg}` },
-        { status: 502 }
-      );
-    }
+    const llm = getLLM();
+    const stream = llm.streamChat({
+      model: getChatModel(),
+      maxTokens: 8192,
+      system: `${toolPrompt}${addressingSuffix}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`,
+      messages: [{ role: "user", content: "请开始生成。" }],
+      signal: req.signal,
+    });
 
     const encoder = new TextEncoder();
 
@@ -130,18 +118,12 @@ export async function POST(req: NextRequest) {
         req.signal.addEventListener("abort", onAbort, { once: true });
 
         try {
-          for await (const event of stream) {
+          for await (const { text } of stream) {
             if (req.signal.aborted) break;
-            if (
-              event.type === "content_block_delta" &&
-              event.delta.type === "text_delta"
-            ) {
-              const text = event.delta.text;
-              try {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
-              } catch {
-                break;
-              }
+            try {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+            } catch {
+              break;
             }
           }
         } catch (streamError) {
@@ -149,9 +131,12 @@ export async function POST(req: NextRequest) {
             (streamError as Error)?.name === "AbortError" || req.signal.aborted;
           if (!isAbort) {
             console.error("Tool stream error:", streamError);
+            const msg = streamError instanceof Error ? streamError.message : String(streamError);
             try {
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: "\n\n[生成中断,请重试]" })}\n\n`)
+                encoder.encode(
+                  `data: ${JSON.stringify({ text: `\n\n[LLM 调用失败: ${msg.slice(0, 200)}]` })}\n\n`
+                )
               );
             } catch { /* closed */ }
           }

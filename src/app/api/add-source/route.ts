@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClient, MODEL } from "@/lib/anthropic";
+import { getLLM, getClassifyModel } from "@/lib/llm";
 import { addDocument, updateDocument, type Document } from "@/lib/store";
 
 function genId() {
@@ -43,10 +43,11 @@ async function classifyAndSummarize(
   name: string,
   textContent: string
 ): Promise<{ type: Document["type"]; typeLabel: string; summary: string; pages: number }> {
-  const client = getClient();
-  const classifyResult = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
+  const llm = getLLM();
+  const classifyResult = await llm.createChat({
+    model: getClassifyModel(),
+    maxTokens: 1024,
+    system: "",
     messages: [
       {
         role: "user",
@@ -66,7 +67,7 @@ ${textContent.slice(0, 2000)}
     ],
   });
 
-  const classifyText = classifyResult.content[0].type === "text" ? classifyResult.content[0].text : "{}";
+  const classifyText = classifyResult.text || "{}";
 
   let parsed: { type?: string; summary?: string; pages_estimate?: number } = {};
   try {

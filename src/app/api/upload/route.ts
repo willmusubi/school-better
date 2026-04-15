@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import path from "path";
 import { pathToFileURL } from "url";
-import { getClient, MODEL } from "@/lib/anthropic";
+// Vision (image OCR) stays on Anthropic — Moonshot's multimodal shape differs
+// and the upgrade is out of scope here. Text classification goes through the
+// provider abstraction so kimi-k2-turbo-preview works when configured.
+import { getAnthropic, getLLM, getClassifyModel } from "@/lib/llm";
 import { addDocument, updateDocument, type Document } from "@/lib/store";
 
 // Hard cap to keep a malicious upload from OOMing the dev server.
@@ -213,9 +216,10 @@ export async function POST(req: NextRequest) {
       if (fileType === "img") {
         const base64 = buffer.toString("base64");
         const mediaType = detectImageMediaType(safeName);
-        const client = getClient();
-        const visionResult = await client.messages.create({
-          model: MODEL,
+        // Vision: Anthropic only. Uses ANTHROPIC_API_KEY regardless of LLM_PROVIDER.
+        const visionModel = process.env.ANTHROPIC_VISION_MODEL || "claude-sonnet-4-6";
+        const visionResult = await getAnthropic().messages.create({
+          model: visionModel,
           max_tokens: 4096,
           messages: [
             {
@@ -238,10 +242,11 @@ export async function POST(req: NextRequest) {
         textContent = await extractText(buffer, safeName);
       }
 
-      const client = getClient();
-      const classifyResult = await client.messages.create({
-        model: MODEL,
-        max_tokens: 1024,
+      const llm = getLLM();
+      const classifyResult = await llm.createChat({
+        model: getClassifyModel(),
+        maxTokens: 1024,
+        system: "",
         messages: [
           {
             role: "user",
@@ -261,10 +266,7 @@ ${textContent.slice(0, 2000)}
         ],
       });
 
-      const classifyText =
-        classifyResult.content[0].type === "text"
-          ? classifyResult.content[0].text
-          : "{}";
+      const classifyText = classifyResult.text || "{}";
 
       let parsed: { type?: string; summary?: string; pages_estimate?: number } = {};
       try {

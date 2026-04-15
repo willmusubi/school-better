@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSurname } from "@/lib/profile";
+import { SettingsModal } from "@/components/settings-modal";
 
 // Avatar + popover in the top bar corner. Clicking the avatar opens a small
 // editor where the teacher types their 姓 (single character). The avatar
@@ -9,6 +10,7 @@ import { useSurname } from "@/lib/profile";
 export function ProfileMenu() {
   const [surname, setSurnameValue] = useSurname();
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const popRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,8 +101,30 @@ export function ProfileMenu() {
               保存
             </button>
           </div>
+
+          {/* Divider + AI settings link */}
+          <div className="-mx-3 mt-3 border-t border-ink-100/40" />
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setSettingsOpen(true);
+            }}
+            className="-mx-1 mt-2 flex w-[calc(100%+0.5rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] text-ink-700 hover:bg-paper-200"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="text-ink-500">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>AI 配置</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ml-auto text-ink-300">
+              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
       )}
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

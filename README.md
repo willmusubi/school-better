@@ -145,20 +145,42 @@ cd school-better
 npm install
 ```
 
-手动新建 `.env.local`，填入以下内容：
+手动新建 `.env.local`。支持两套 LLM 提供方，默认 Claude，国内部署可切换到 Kimi（Moonshot）。
+
+**方案 A · Claude（默认，国内需代理）**
 
 ```bash
+LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxx
 
-# 可选：切换模型
-# ANTHROPIC_MODEL=claude-opus-4-6
+# 国内代理（SDK 会自动拾取）
+https_proxy=http://127.0.0.1:7890
+http_proxy=http://127.0.0.1:7890
+```
+
+**方案 B · Kimi K2 Thinking（国内直连）**
+
+```bash
+LLM_PROVIDER=moonshot
+MOONSHOT_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
+# 国内平台: https://api.moonshot.cn/v1  · 海外: https://api.moonshot.ai/v1（默认）
+MOONSHOT_BASE_URL=https://api.moonshot.cn/v1
+
+# 图片 OCR 目前仍走 Anthropic。如果你会上传图片,也填上:
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxx
+```
+
+**可选：自定义模型**
+
+```bash
+# Anthropic 默认: chat=claude-sonnet-4-6  followup=claude-haiku-4-5-20251001
+# Moonshot  默认: chat=kimi-k2-thinking   followup=kimi-k2-turbo-preview
+# LLM_CHAT_MODEL=kimi-k2.5
+# LLM_FOLLOWUP_MODEL=kimi-k2-turbo-preview
+# LLM_CLASSIFY_MODEL=kimi-k2-turbo-preview
 
 # 可选：提高上传大小限制（默认 25 MB）
 # NEXT_PUBLIC_MAX_UPLOAD_MB=50
-
-# 可选：国内代理（SDK 会自动拾取）
-# https_proxy=http://127.0.0.1:7890
-# http_proxy=http://127.0.0.1:7890
 ```
 
 启动：
