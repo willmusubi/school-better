@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* 书卷气 Scholar's Elegance — Color System */
+  --color-ink-900: oklch(0.15 0.025 250);
+  --color-ink-800: oklch(0.22 0.02 250);
+  --color-ink-700: oklch(0.32 0.018 250);
+  --color-ink-600: oklch(0.42 0.012 250);
+  --color-ink-500: oklch(0.52 0.01 250);
+  --color-ink-400: oklch(0.62 0.008 250);
+  --color-ink-300: oklch(0.74 0.006 250);
+  --color-ink-200: oklch(0.86 0.004 250);
+  --color-ink-100: oklch(0.93 0.003 250);
+  --color-ink-50: oklch(0.97 0.002 250);
+
+  /* Rice paper warmth — richer, more visible */
+  --color-paper-50: oklch(0.99 0.006 80);
+  --color-paper-100: oklch(0.975 0.01 78);
+  --color-paper-200: oklch(0.955 0.015 76);
+  --color-paper-300: oklch(0.93 0.02 74);
+  --color-paper-400: oklch(0.9 0.025 72);
+
+  /* Vermillion — 朱砂, deeper, more saturated */
+  --color-zhusha-400: oklch(0.62 0.16 28);
+  --color-zhusha-500: oklch(0.54 0.19 26);
+  --color-zhusha-600: oklch(0.46 0.2 24);
+  --color-zhusha-700: oklch(0.38 0.18 22);
+
+  /* Bamboo green — 竹 */
+  --color-zhu-400: oklch(0.68 0.11 155);
+  --color-zhu-500: oklch(0.58 0.13 155);
+  --color-zhu-600: oklch(0.48 0.12 155);
+
+  /* Indigo scholar — 靛 */
+  --color-dian-400: oklch(0.6 0.11 260);
+  --color-dian-500: oklch(0.5 0.13 260);
+  --color-dian-600: oklch(0.42 0.15 260);
+
+  /* Amber/gold — 金 */
+  --color-jin-400: oklch(0.75 0.13 75);
+  --color-jin-500: oklch(0.68 0.15 75);
+
+  /* Type scale */
+  --font-sans: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: "Noto Serif SC", "Songti SC", "STSong", serif;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 3px oklch(0.3 0.02 250 / 0.06), 0 1px 2px oklch(0.3 0.02 250 / 0.04);
+  --shadow-md: 0 4px 12px oklch(0.3 0.02 250 / 0.08), 0 2px 4px oklch(0.3 0.02 250 / 0.04);
+  --shadow-lg: 0 8px 30px oklch(0.3 0.02 250 / 0.1), 0 4px 8px oklch(0.3 0.02 250 / 0.05);
+  --shadow-panel: -6px 0 30px oklch(0.2 0.02 250 / 0.08);
+}
+
+/* Base */
+body {
+  background: var(--color-paper-200);
+  color: var(--color-ink-800);
+  font-family: var(--font-sans);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-ink-200); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-300); }
+
+/* Selection — zhusha tint */
+::selection {
+  background: oklch(0.82 0.1 25 / 0.35);
+  color: var(--color-ink-900);
+}
+
+/* Smooth transitions on interactive elements only */
+button, a, input, textarea, select, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Animations */
+@keyframes slide-in-right {
+  from { transform: translateX(40%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-gentle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-slide-in { animation: slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-fade-in { animation: fade-in 0.35s ease-out forwards; }
+.animate-fade-in-up { animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Staggered entrance */
+.stagger-children > * { opacity: 0; animation-fill-mode: forwards; }
+.stagger-children > *:nth-child(1) { animation-delay: 30ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 130ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 230ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 280ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 330ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 380ms; }
+
+/* Subtle grain overlay on paper surfaces */
+.paper-texture {
+  position: relative;
+}
+.paper-texture::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px;
+}
