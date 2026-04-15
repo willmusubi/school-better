@@ -1,3 +1,5 @@
+import { ProfileMenu } from "@/components/profile-menu";
+
 export function TopBar() {
   return (
     <header className="relative z-20 flex h-14 shrink-0 items-center justify-between bg-paper-50 px-5 shadow-[var(--shadow-soft)]">
@@ -25,10 +27,7 @@ export function TopBar() {
           <span className="text-xs font-medium text-ink-700">高中语文</span>
         </div>
 
-        {/* Avatar */}
-        <button className="flex h-8 w-8 items-center justify-center rounded-full bg-dian-500/10 text-xs font-medium text-dian-600 ring-2 ring-dian-500/10 hover:ring-dian-500/25">
-          李
-        </button>
+        <ProfileMenu />
       </div>
     </header>
   );

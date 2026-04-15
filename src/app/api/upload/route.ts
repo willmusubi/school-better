@@ -23,6 +23,15 @@ async function configurePdfWorker() {
   pdfWorkerConfigured = true;
 }
 
+// Thrown by extractText when we cannot produce usable document content.
+// The outer catch turns this into status:"error" so it never pollutes the LLM context.
+class ParseError extends Error {
+  constructor(public userMessage: string, cause?: unknown) {
+    super(userMessage);
+    if (cause instanceof Error) this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
+  }
+}
+
 const newId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID().replace(/-/g, "").slice(0, 12)
@@ -49,8 +58,12 @@ const IMAGE_MEDIA_TYPES = {
 
 type ImageMediaType = (typeof IMAGE_MEDIA_TYPES)[keyof typeof IMAGE_MEDIA_TYPES];
 
+function getExt(name: string): string {
+  return name.split(".").pop()?.toLowerCase() || "";
+}
+
 function detectFileType(name: string): Document["fileType"] {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
+  const ext = getExt(name);
   if (ext === "pdf") return "pdf";
   if (["doc", "docx"].includes(ext)) return "doc";
   if (Object.keys(IMAGE_MEDIA_TYPES).includes(ext)) return "img";
@@ -59,43 +72,87 @@ function detectFileType(name: string): Document["fileType"] {
 }
 
 function detectImageMediaType(name: string): ImageMediaType {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
+  const ext = getExt(name);
   return IMAGE_MEDIA_TYPES[ext as keyof typeof IMAGE_MEDIA_TYPES] || "image/jpeg";
 }
 
-async function extractText(buffer: Buffer, fileName: string, fileType: Document["fileType"]): Promise<string> {
-  if (fileType === "pdf") {
+// Dispatches on the real extension (not the coarse fileType enum) so .doc and .docx
+// are handled by the right parser. Throws ParseError on failure — the outer catch
+// marks the document as status:"error" instead of saving the sentinel as content.
+async function extractText(buffer: Buffer, fileName: string): Promise<string> {
+  const ext = getExt(fileName);
+
+  if (ext === "pdf") {
     try {
       await configurePdfWorker();
       const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: buffer });
       try {
         const result = await parser.getText();
-        return result.text || "";
+        const text = (result.text || "").trim();
+        if (!text) throw new ParseError("PDF 中没有可提取的文本(可能是扫描件,请尝试导出为图片上传)");
+        return text;
       } finally {
         await parser.destroy();
       }
     } catch (err) {
+      if (err instanceof ParseError) throw err;
       console.error("[upload] PDF parse failed:", err);
-      return "[PDF解析失败,请尝试其他格式]";
+      throw new ParseError("PDF 解析失败,请检查文件是否损坏", err);
     }
   }
 
-  if (fileType === "doc") {
+  // Legacy Word 97-2003 binary format — mammoth can't read this, use word-extractor.
+  if (ext === "doc") {
     try {
-      const mammoth = await import("mammoth");
-      const result = await mammoth.extractRawText({ buffer });
-      return result.value || "";
-    } catch {
-      return "[Word文档解析失败]";
+      const WordExtractor = (await import("word-extractor")).default;
+      const extractor = new WordExtractor();
+      const doc = await extractor.extract(buffer);
+      const text = [doc.getBody(), doc.getFootnotes(), doc.getEndnotes()]
+        .filter(Boolean)
+        .join("\n\n")
+        .trim();
+      if (!text) throw new ParseError(".doc 文件中没有可提取的文本");
+      return text;
+    } catch (err) {
+      if (err instanceof ParseError) throw err;
+      console.error("[upload] .doc parse failed:", err);
+      throw new ParseError(".doc 文件解析失败,建议另存为 .docx 后重新上传", err);
     }
   }
 
-  if (fileType === "img") {
+  // Modern Office + OpenDocument formats — officeparser handles all of these.
+  if (["docx", "pptx", "xlsx", "odt", "odp", "ods", "rtf"].includes(ext)) {
+    try {
+      const { parseOffice } = await import("officeparser");
+      const ast = await parseOffice(buffer);
+      const text = (ast.toText?.() || "").trim();
+      if (!text) throw new ParseError(`${ext.toUpperCase()} 文件中没有可提取的文本`);
+      return text;
+    } catch (err) {
+      if (err instanceof ParseError) throw err;
+      console.error(`[upload] .${ext} parse failed:`, err);
+      throw new ParseError(`${ext.toUpperCase()} 文件解析失败,请检查文件是否损坏`, err);
+    }
+  }
+
+  // Old PowerPoint binary .ppt — no reliable pure-JS parser. Tell the user to convert.
+  if (ext === "ppt") {
+    throw new ParseError("暂不支持旧版 .ppt 格式,请另存为 .pptx 后重新上传");
+  }
+
+  if (ext === "txt" || ext === "md") {
+    const text = buffer.toString("utf-8").trim();
+    if (!text) throw new ParseError("文件内容为空");
+    return text;
+  }
+
+  // Image extraction is handled inline by the caller via Claude vision.
+  if (Object.keys(IMAGE_MEDIA_TYPES).includes(ext)) {
     return `[图片文件: ${fileName}]`;
   }
 
-  return "[不支持的文件格式]";
+  throw new ParseError(`暂不支持 .${ext} 格式`);
 }
 
 export async function POST(req: NextRequest) {
@@ -178,7 +235,7 @@ export async function POST(req: NextRequest) {
         });
         textContent = visionResult.content[0].type === "text" ? visionResult.content[0].text : "";
       } else {
-        textContent = await extractText(buffer, safeName, fileType);
+        textContent = await extractText(buffer, safeName);
       }
 
       const client = getClient();
@@ -236,9 +293,13 @@ ${textContent.slice(0, 2000)}
       });
     } catch (err) {
       console.error("Document parsing error:", err);
+      const summary =
+        err instanceof ParseError
+          ? err.userMessage
+          : "解析失败,请重试";
       updateDocument(id, {
         status: "error",
-        summary: "解析失败,请重试",
+        summary,
       });
     }
   })();

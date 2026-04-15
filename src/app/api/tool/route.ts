@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClient, MODEL } from "@/lib/anthropic";
+import { getClient, MODEL, teacherAddressLine } from "@/lib/anthropic";
 import { getDocumentContext } from "@/lib/store";
 
 const TOOL_PROMPTS: Record<string, (params: Record<string, string>) => string> = {
@@ -78,7 +78,7 @@ ${topic ? `课题: ${topic}` : "请基于知识库中的教材内容,选择一�
 
 export async function POST(req: NextRequest) {
   try {
-    const { tool, params, notebookId } = await req.json();
+    const { tool, params, notebookId, teacherSurname } = await req.json();
 
     if (!tool || !TOOL_PROMPTS[tool]) {
       return NextResponse.json({ error: "Unknown tool" }, { status: 400 });
@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
         ? `\n\n[系统提示] 以下文档内容超长,只取了前 8000 字: ${truncatedDocs.join(", ")}`
         : "";
     const toolPrompt = TOOL_PROMPTS[tool](params || {});
+    const addressLine = teacherAddressLine(teacherSurname);
+    const addressingSuffix = addressLine ? `\n\n${addressLine}` : "";
 
     const client = getClient();
 
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
         {
           model: MODEL,
           max_tokens: 8192,
-          system: `${toolPrompt}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`,
+          system: `${toolPrompt}${addressingSuffix}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`,
           messages: [{ role: "user", content: "请开始生成。" }],
         },
         { signal: req.signal }

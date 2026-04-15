@@ -1,12 +1,36 @@
 // Shared lightweight Markdown renderer used by chat and studio tool outputs.
 // Supports: #/##/### headings, **bold** lines as heading, inline **bold**,
 // unordered lists (- / *), ordered lists (1. 2. ...), blockquotes (>),
-// fenced code blocks (```), horizontal rules (---).
-// Kept regex-based for the MVP; swap for react-markdown when we need tables.
+// fenced code blocks (```), horizontal rules (---), GFM pipe tables.
+// Kept regex-based for the MVP; swap for react-markdown only if we need nested blocks inside cells.
 
 import type { ReactNode } from "react";
 
 type Variant = "chat" | "tool";
+type Align = "left" | "center" | "right";
+
+// A GFM pipe table needs: a header row starting with `|`, a separator row of
+// `|---|---|` (optionally with `:` for alignment), and at least one body row.
+// Surrounding `|`s are optional per GFM, but we require them here to avoid
+// false positives on inline text that happens to contain a pipe.
+const TABLE_ROW_RE = /^\|.*\|\s*$/;
+const TABLE_SEP_RE = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/;
+
+function splitCells(row: string): string[] {
+  // Strip the outer pipes then split. Trim each cell; GFM allows whitespace padding.
+  const trimmed = row.trim().replace(/^\|/, "").replace(/\|$/, "");
+  return trimmed.split("|").map((c) => c.trim());
+}
+
+function parseAlignments(sep: string): Align[] {
+  return splitCells(sep).map((cell) => {
+    const left = cell.startsWith(":");
+    const right = cell.endsWith(":");
+    if (left && right) return "center";
+    if (right) return "right";
+    return "left";
+  });
+}
 
 export function Markdown({ content, variant = "chat" }: { content: string; variant?: Variant }) {
   const isTool = variant === "tool";
@@ -154,6 +178,68 @@ export function Markdown({ content, variant = "chat" }: { content: string; varia
           ))}
         </ol>
       );
+      continue;
+    }
+
+    // GFM pipe table — header row, separator row, then N body rows.
+    // Must confirm the next line is a separator before committing to table parsing,
+    // otherwise a single pipe-containing sentence would be misread as a table.
+    if (
+      TABLE_ROW_RE.test(line) &&
+      i + 1 < lines.length &&
+      TABLE_SEP_RE.test(lines[i + 1].trim())
+    ) {
+      const header = splitCells(line);
+      const aligns = parseAlignments(lines[i + 1].trim());
+      const bodyRows: string[][] = [];
+      let j = i + 2;
+      while (j < lines.length && TABLE_ROW_RE.test(lines[j].trim())) {
+        bodyRows.push(splitCells(lines[j].trim()));
+        j++;
+      }
+
+      const alignClass = (idx: number) => {
+        const a = aligns[idx] || "left";
+        return a === "center" ? "text-center" : a === "right" ? "text-right" : "text-left";
+      };
+
+      out.push(
+        <div key={`table-${i}`} className="my-3 overflow-x-auto">
+          <table
+            className={`w-full border-collapse border border-ink-100/60 ${
+              isTool ? "text-[12px]" : "text-[13px]"
+            }`}
+          >
+            <thead>
+              <tr className="bg-paper-100/80">
+                {header.map((cell, k) => (
+                  <th
+                    key={k}
+                    className={`border border-ink-100/60 px-3 py-2 font-serif font-semibold text-ink-800 ${alignClass(k)}`}
+                  >
+                    {renderInline(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bodyRows.map((row, rk) => (
+                <tr key={rk} className="odd:bg-paper-50 even:bg-paper-100/30">
+                  {header.map((_, ck) => (
+                    <td
+                      key={ck}
+                      className={`border border-ink-100/60 px-3 py-2 text-ink-700 leading-[1.8] ${alignClass(ck)}`}
+                    >
+                      {renderInline(row[ck] ?? "")}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      i = j;
       continue;
     }
 

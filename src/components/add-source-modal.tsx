@@ -10,7 +10,83 @@ interface Props {
 
 type Mode = "main" | "urls" | "text";
 
+type UploadStatus = "queued" | "uploading" | "done" | "error";
+interface UploadItem {
+  id: string;
+  name: string;
+  size: number;
+  status: UploadStatus;
+  progress: number;
+  error?: string;
+}
+
 const MAX_UPLOAD_MB = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || 25);
+
+const newItemId = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2, 10);
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function UploadRow({ item }: { item: UploadItem }) {
+  const { status } = item;
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg bg-paper-100 px-3 py-2 animate-fade-in">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
+        {status === "queued" && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-300">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 7v5l3 2" strokeLinecap="round" />
+          </svg>
+        )}
+        {status === "uploading" && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin text-zhusha-500">
+            <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
+          </svg>
+        )}
+        {status === "done" && (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-zhu-500">
+            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+        {status === "error" && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zhusha-600">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
+          </svg>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[12px] font-medium text-ink-700">{item.name}</span>
+          <span className="shrink-0 text-[10px] tabular-nums text-ink-400">
+            {status === "uploading" ? `${item.progress}%` : formatSize(item.size)}
+          </span>
+        </div>
+        <div className={`mt-0.5 text-[10px] ${status === "error" ? "text-zhusha-600" : "text-ink-400"}`}>
+          {status === "queued" && "等待中..."}
+          {status === "uploading" && "上传中..."}
+          {status === "done" && "上传成功 · 正在解析"}
+          {status === "error" && (item.error || "上传失败")}
+        </div>
+        {(status === "uploading" || status === "queued") && (
+          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-paper-300">
+            <div
+              className="h-full rounded-full bg-zhusha-500 transition-[width] duration-200 ease-out"
+              style={{ width: `${item.progress}%` }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function AddSourceModal({ notebookId, onClose, onAdded }: Props) {
   const [mode, setMode] = useState<Mode>("main");
@@ -18,54 +94,103 @@ export function AddSourceModal({ notebookId, onClose, onAdded }: Props) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [items, setItems] = useState<UploadItem[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // XHR gives us real upload progress events — fetch() doesn't expose them reliably.
+  const uploadOne = (file: File, itemId: string) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const form = new FormData();
+      form.append("file", file);
+      form.append("notebookId", notebookId);
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (!e.lengthComputable) return;
+        const pct = Math.round((e.loaded / e.total) * 100);
+        setItems((prev) =>
+          prev.map((it) => (it.id === itemId ? { ...it, progress: pct } : it))
+        );
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setItems((prev) =>
+            prev.map((it) =>
+              it.id === itemId ? { ...it, status: "done", progress: 100 } : it
+            )
+          );
+          // Refresh sidebar now — parsing happens server-side and will stream in via polling.
+          onAdded?.();
+          resolve();
+        } else {
+          let msg = "上传失败";
+          try {
+            const data = JSON.parse(xhr.responseText);
+            msg = data.error || msg;
+          } catch {
+            /* non-json response, keep default */
+          }
+          setItems((prev) =>
+            prev.map((it) =>
+              it.id === itemId ? { ...it, status: "error", error: msg } : it
+            )
+          );
+          reject(new Error(msg));
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        setItems((prev) =>
+          prev.map((it) =>
+            it.id === itemId ? { ...it, status: "error", error: "网络错误" } : it
+          )
+        );
+        reject(new Error("网络错误"));
+      });
+
+      xhr.open("POST", "/api/upload");
+      xhr.send(form);
+    });
+
   const uploadFiles = async (files: FileList | File[]) => {
-    setUploading(true);
-    setErrors([]);
     const arr = Array.from(files);
 
-    // Validate client-side first so we don't even kick off doomed uploads.
-    const tooLarge = arr.filter((f) => f.size > MAX_UPLOAD_MB * 1024 * 1024);
-    const valid = arr.filter((f) => f.size <= MAX_UPLOAD_MB * 1024 * 1024);
-    const localErrors = tooLarge.map(
-      (f) => `${f.name}: 超过 ${MAX_UPLOAD_MB} MB 上限`
-    );
+    // Build queue upfront. Oversized files get marked error immediately — no wasted bytes on the wire.
+    const newItems: UploadItem[] = arr.map((f) => {
+      const tooLarge = f.size > MAX_UPLOAD_MB * 1024 * 1024;
+      return {
+        id: newItemId(),
+        name: f.name,
+        size: f.size,
+        status: tooLarge ? "error" : "queued",
+        progress: 0,
+        error: tooLarge ? `超过 ${MAX_UPLOAD_MB} MB 上限` : undefined,
+      };
+    });
 
-    // Parallel upload — Promise.all so a single huge file doesn't block the rest.
+    setItems((prev) => [...prev, ...newItems]);
+    setUploading(true);
+
+    // Parallel uploads — one bad file doesn't block the others.
     const results = await Promise.allSettled(
-      valid.map(async (file) => {
-        const form = new FormData();
-        form.append("file", file);
-        form.append("notebookId", notebookId);
-        const res = await fetch("/api/upload", { method: "POST", body: form });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `${file.name}: 上传失败`);
-        }
-        return file.name;
+      newItems.map((item, i) => {
+        if (item.status === "error") return Promise.reject(new Error(item.error));
+        setItems((prev) =>
+          prev.map((it) => (it.id === item.id ? { ...it, status: "uploading" } : it))
+        );
+        return uploadOne(arr[i], item.id);
       })
     );
 
-    const remoteErrors = results
-      .map((r, i) =>
-        r.status === "rejected"
-          ? `${valid[i]?.name || "file"}: ${(r.reason as Error).message || "上传失败"}`
-          : null
-      )
-      .filter((e): e is string => !!e);
-
-    const allErrors = [...localErrors, ...remoteErrors];
     setUploading(false);
-    onAdded?.();
 
-    if (allErrors.length > 0) {
-      setErrors(allErrors);
-      // Keep modal open so user can see errors. They can close manually.
-      return;
+    // Auto-close only if everything succeeded, with a brief pause so the success state is visible.
+    const allSuccess = results.every((r) => r.status === "fulfilled");
+    if (allSuccess) {
+      setTimeout(onClose, 1000);
     }
-    onClose();
+    // On any failure we stay open — the per-file queue already shows exactly what failed and why.
   };
 
   const submitUrls = async () => {
@@ -145,24 +270,34 @@ export function AddSourceModal({ notebookId, onClose, onAdded }: Props) {
                     <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <p className="text-[13px] font-medium text-ink-600">
-                  {uploading ? "上传中..." : "拖拽文件到这里"}
-                </p>
+                <p className="text-[13px] font-medium text-ink-600">拖拽文件到这里</p>
                 <p className="mt-1 text-[11px] text-ink-400">
                   支持 PDF、Word、图片、PPT 等 · 单个 ≤ {MAX_UPLOAD_MB} MB
                 </p>
               </div>
-              {errors.length > 0 && (
-                <div className="mt-3 rounded-xl border border-zhusha-500/40 bg-zhusha-600/5 px-3 py-2.5">
-                  <div className="mb-1 text-[11px] font-semibold text-zhusha-700">部分文件未上传</div>
-                  <ul className="space-y-0.5 text-[11px] text-ink-700">
-                    {errors.map((e, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="mt-1 shrink-0 text-zhusha-500">·</span>
-                        <span className="break-all">{e}</span>
-                      </li>
-                    ))}
-                  </ul>
+
+              {items.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[11px] font-semibold text-ink-500">
+                      {uploading
+                        ? `上传中 (${items.filter((i) => i.status === "done").length}/${items.length})`
+                        : items.some((i) => i.status === "error")
+                        ? "部分文件未上传"
+                        : "上传完成"}
+                    </span>
+                    {!uploading && (
+                      <button
+                        onClick={() => setItems([])}
+                        className="text-[10px] text-ink-400 hover:text-ink-600"
+                      >
+                        清空
+                      </button>
+                    )}
+                  </div>
+                  {items.map((item) => (
+                    <UploadRow key={item.id} item={item} />
+                  ))}
                 </div>
               )}
             </div>
@@ -175,7 +310,11 @@ export function AddSourceModal({ notebookId, onClose, onAdded }: Props) {
                 multiple
                 accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.ppt,.pptx,.txt"
                 className="hidden"
-                onChange={(e) => e.target.files && uploadFiles(e.target.files)}
+                onChange={(e) => {
+                  if (e.target.files?.length) uploadFiles(e.target.files);
+                  // Reset so picking the same file again still fires change.
+                  e.target.value = "";
+                }}
               />
               <button
                 onClick={() => fileRef.current?.click()}

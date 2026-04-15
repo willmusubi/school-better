@@ -25,6 +25,7 @@ export function DocumentRow({ item, typeStyle, onChanged }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isParsing = item.status === "parsing";
+  const isError = item.status === "error";
 
   // Close menu on outside click
   useEffect(() => {
@@ -84,10 +85,21 @@ export function DocumentRow({ item, typeStyle, onChanged }: Props) {
       }`}
       title={item.summary}
     >
-      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${typeStyle.bg} ${typeStyle.text}`}>
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${
+          isError
+            ? "bg-zhusha-600/10 text-zhusha-600"
+            : `${typeStyle.bg} ${typeStyle.text}`
+        }`}
+      >
         {isParsing ? (
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
             <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
+          </svg>
+        ) : isError ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
           </svg>
         ) : (
           typeStyle.label
@@ -112,18 +124,29 @@ export function DocumentRow({ item, typeStyle, onChanged }: Props) {
             className="w-full rounded bg-paper-50 px-1.5 py-0.5 text-[12px] text-ink-800 outline-none ring-1 ring-zhusha-500/30 focus:ring-2 focus:ring-zhusha-500/40"
           />
         ) : (
-          <span className="block truncate text-[12px] leading-snug text-ink-700 group-hover:text-ink-900">
+          <span
+            className={`block truncate text-[12px] leading-snug group-hover:text-ink-900 ${
+              isError ? "text-ink-500" : "text-ink-700"
+            }`}
+          >
             {item.name}
           </span>
         )}
         {isParsing && (
           <span className="text-[10px] text-ink-400">解析中...</span>
         )}
+        {isError && (
+          <span className="block truncate text-[10px] text-zhusha-600" title={item.summary}>
+            {item.summary || "解析失败"}
+          </span>
+        )}
       </div>
 
       {!isParsing && !editing && (
         <>
-          <span className="shrink-0 text-[10px] tabular-nums text-ink-300 group-hover:hidden">{item.pages}页</span>
+          <span className="shrink-0 text-[10px] tabular-nums text-ink-300 group-hover:hidden">
+            {isError ? "—" : `${item.pages}页`}
+          </span>
           <button
             onClick={(e) => {
               e.stopPropagation();

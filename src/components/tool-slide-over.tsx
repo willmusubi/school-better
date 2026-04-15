@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Markdown } from "@/components/markdown";
 import type { ToolId } from "@/app/notebooks/[id]/page";
+import { getSurname } from "@/lib/profile";
 
 interface ToolSlideOverProps {
   toolId: ToolId;
@@ -61,7 +62,7 @@ function useToolStream(notebookId: string) {
       const res = await fetch("/api/tool", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool, params, notebookId }),
+        body: JSON.stringify({ tool, params, notebookId, teacherSurname: getSurname() }),
         signal: controller.signal,
       });
       if (!res.ok) {
@@ -120,10 +121,10 @@ function QuizModal({ onClose, notebookId }: { onClose: () => void; notebookId: s
   const { result, loading, generate, stop } = useToolStream(notebookId);
 
   const examples = [
-    "基于必修上册第七单元，生成一套古诗文测验",
-    "测验必须包含20道题，覆盖文言文翻译和鉴赏",
-    "仅基于《赤壁赋》和《劝学》两篇课文出题",
-    "测验必须专注于文言虚词的用法辨析",
+    "基于已添加的教材，生成一套课堂测验",
+    "测验须包含 20 道题，覆盖知识库中的核心知识点",
+    "仅从已上传的课文文本中出题，不要引入外部内容",
+    "针对知识库中出现的重点字词和语段设计题目",
   ];
 
   return (
@@ -197,10 +198,10 @@ function StudentSimModal({ onClose, notebookId }: { onClose: () => void; noteboo
   const { result, loading, generate, stop } = useToolStream(notebookId);
 
   const examples = [
-    "模拟学生在学习《赤壁赋》时可能提出的问题",
-    "重点模拟基础薄弱学生对文言文翻译的困惑",
-    "模拟好奇心强的学生对苏轼思想的深入追问",
-    "模拟学生在课堂讨论环节的自发提问",
+    "基于已添加的课文，模拟学生在课堂上可能提出的问题",
+    "针对知识库中的重点内容，模拟学困生的典型困惑",
+    "结合已上传资料的背景知识，模拟优等生的深入追问",
+    "模拟学生阅读已添加课文时的自发疑问",
   ];
 
   return (
@@ -279,9 +280,9 @@ function LessonModal({ onClose, notebookId }: { onClose: () => void; notebookId:
   const { result, loading, generate, stop } = useToolStream(notebookId);
 
   const examples = [
-    "基于《赤壁赋》设计一堂课的教案",
-    "设计《劝学》与《师说》的对比阅读课",
-    "设计一堂文言文虚词专题复习课",
+    "基于已添加的教材设计一堂课的教案",
+    "将知识库中的多篇课文做对比阅读设计",
+    "围绕已上传资料的重点难点设计一堂复习课",
   ];
 
   return (

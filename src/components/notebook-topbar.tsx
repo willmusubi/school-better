@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { ProfileMenu } from "@/components/profile-menu";
 
 interface NotebookTopBarProps {
   notebook: { id: string; title: string; emoji: string };
@@ -162,9 +163,7 @@ export function NotebookTopBar({ notebook, onBack, onRenamed, onDeleted }: Noteb
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zhusha-600/10 text-[10px] text-zhusha-600">文</span>
           <span className="text-xs font-medium text-ink-700">高中语文</span>
         </div>
-        <button className="flex h-8 w-8 items-center justify-center rounded-full bg-dian-500/10 text-xs font-medium text-dian-600 ring-2 ring-dian-500/10 hover:ring-dian-500/25">
-          李
-        </button>
+        <ProfileMenu />
       </div>
     </header>
   );

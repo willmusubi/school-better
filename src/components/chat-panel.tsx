@@ -2,11 +2,18 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Markdown } from "@/components/markdown";
+import { getSurname } from "@/lib/profile";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  // Follow-up suggestions generated after an assistant message completes. Only
+  // rendered under the latest assistant message so the UI stays clean.
+  followups?: string[];
+  // "loading" while /api/followups is in flight, so we can show a subtle pending
+  // state instead of popping the pills in abruptly.
+  followupsLoading?: boolean;
 }
 
 interface ChatPanelProps {
@@ -17,9 +24,9 @@ interface ChatPanelProps {
 }
 
 const STARTER_PROMPTS = [
-  "帮我分析这篇课文的论证思路",
-  "基于试卷第5题举一反三",
-  "整理本单元的文言文知识点",
+  "总结已添加资料的核心内容",
+  "基于知识库列出本课的重点与难点",
+  "对比不同资料中的关键观点",
 ];
 
 const newId = () =>
@@ -99,8 +106,42 @@ export function ChatPanel({
     abortRef.current = null;
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  // After the main stream completes, kick off a secondary call to generate
+  // 3 short follow-up suggestions. Runs detached so the chat input is unblocked
+  // immediately; the pills just appear below the message when they arrive.
+  const fetchFollowups = async (assistantId: string, userText: string, assistantText: string) => {
+    if (!assistantText.trim()) return;
+    setMessages((prev) =>
+      prev.map((m) => (m.id === assistantId ? { ...m, followupsLoading: true } : m))
+    );
+    try {
+      const res = await fetch("/api/followups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notebookId,
+          userMessage: userText,
+          assistantMessage: assistantText,
+          teacherSurname: getSurname(),
+        }),
+      });
+      const data: { followups?: string[] } = res.ok ? await res.json() : {};
+      const followups = Array.isArray(data.followups) ? data.followups : [];
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, followups, followupsLoading: false } : m
+        )
+      );
+    } catch (err) {
+      console.error("Followups error:", err);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, followupsLoading: false } : m))
+      );
+    }
+  };
+
+  const sendMessage = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || isStreaming) return;
 
     const userMsg: Message = { id: newId(), role: "user", content: text };
@@ -113,6 +154,12 @@ export function ChatPanel({
     const assistantId = newId();
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
+    // Tracks the assembled assistant text so we can feed it back into /api/followups
+    // in the finally-block. Reading it from state there is racy because the stream
+    // closure ends before the last setState has flushed.
+    let assembled = "";
+    let streamOk = false;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -120,7 +167,7 @@ export function ChatPanel({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, notebookId }),
+        body: JSON.stringify({ message: text, notebookId, teacherSurname: getSurname() }),
         signal: controller.signal,
       });
 
@@ -154,6 +201,7 @@ export function ChatPanel({
             if (data === "[DONE]") break;
             try {
               const { text: chunk } = JSON.parse(data);
+              assembled += chunk;
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId ? { ...m, content: m.content + chunk } : m
@@ -163,6 +211,7 @@ export function ChatPanel({
           }
         }
       }
+      streamOk = true;
     } catch (err) {
       const isAbort = (err as Error)?.name === "AbortError";
       if (isAbort) {
@@ -187,6 +236,11 @@ export function ChatPanel({
     } finally {
       abortRef.current = null;
       setIsStreaming(false);
+      // Only generate follow-ups when the main answer arrived cleanly. No point
+      // on aborts (partial text) or errors (fallback message).
+      if (streamOk && assembled.trim()) {
+        fetchFollowups(assistantId, text, assembled);
+      }
     }
   };
 
@@ -238,20 +292,22 @@ export function ChatPanel({
             </div>
           ) : (
             <div className="space-y-6">
-              {messages.map((msg) => (
-                <div key={msg.id}>
-                  {msg.role === "user" ? (
-                    <div className="flex justify-end">
-                      <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-5 py-3 text-[13px] leading-relaxed text-paper-50 shadow-[var(--shadow-md)]">
-                        {msg.content}
+              {messages.map((msg, idx) => {
+                // Follow-up pills only render under the latest assistant message.
+                // Once the teacher sends another question, the old pills vanish so
+                // the conversation stays focused on the current thread.
+                const isLastAssistant =
+                  msg.role === "assistant" && idx === messages.length - 1;
+                return (
+                  <div key={msg.id}>
+                    {msg.role === "user" ? (
+                      <div className="flex justify-end">
+                        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-5 py-3 text-[13px] leading-relaxed text-paper-50 shadow-[var(--shadow-md)]">
+                          {msg.content}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-3.5">
-                      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zhusha-600/10 shadow-[var(--shadow-soft)]">
-                        <span className="font-serif text-xs font-bold text-zhusha-600">宝</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
+                    ) : (
+                      <div className="min-w-0">
                         <div className="rounded-2xl rounded-tl-md bg-paper-50 px-5 py-4 shadow-[var(--shadow-soft)]">
                           {msg.content ? (
                             <Markdown content={msg.content} variant="chat" />
@@ -262,11 +318,46 @@ export function ChatPanel({
                             </div>
                           )}
                         </div>
+
+                        {isLastAssistant && !isStreaming && (msg.followupsLoading || (msg.followups && msg.followups.length > 0)) && (
+                          <div className="mt-3 animate-fade-in">
+                            <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-ink-400">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zhusha-500">
+                                <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              继续追问
+                            </div>
+                            {msg.followupsLoading ? (
+                              <div className="flex gap-1.5">
+                                {[0, 1, 2].map((i) => (
+                                  <div
+                                    key={i}
+                                    className="h-7 w-28 animate-pulse rounded-full bg-paper-100"
+                                    style={{ animationDelay: `${i * 100}ms` }}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {msg.followups!.map((q, k) => (
+                                  <button
+                                    key={k}
+                                    onClick={() => sendMessage(q)}
+                                    className="group max-w-full rounded-full border border-zhusha-500/25 bg-paper-50 px-3 py-1.5 text-left text-[12px] leading-snug text-ink-700 transition-all hover:border-zhusha-500/50 hover:bg-zhusha-600/5 hover:text-ink-900 active:scale-[0.98]"
+                                  >
+                                    <span className="mr-1 text-zhusha-500 group-hover:text-zhusha-600">·</span>
+                                    {q}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -349,7 +440,7 @@ export function ChatPanel({
                   </button>
                 ) : (
                   <button
-                    onClick={sendMessage}
+                    onClick={() => sendMessage()}
                     disabled={!input.trim()}
                     className="absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-xl bg-zhusha-600 text-paper-50 shadow-[0_2px_8px_oklch(0.46_0.2_24/0.3)] hover:bg-zhusha-700 active:scale-95 disabled:opacity-40"
                     aria-label="发送"

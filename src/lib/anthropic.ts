@@ -21,3 +21,16 @@ export const SYSTEM_PROMPT = `你是"教师百宝箱"的AI助手,专门服务于
 4. 如果知识库中没有相关内容,明确说明并给出建议
 
 你不是通用聊天机器人。你是这位教师的专属教学助手,了解他们上传的所有资料。`;
+
+// Normalize the surname and build the addressing directive that gets prepended
+// to the system prompt. Keep only the first character — avatars are single-char
+// and we already append "老师". Empty / invalid input produces no directive,
+// so the model falls back to a neutral tone.
+export function teacherAddressLine(surname: unknown): string {
+  if (typeof surname !== "string") return "";
+  const first = Array.from(surname.trim())[0];
+  if (!first) return "";
+  // Reject anything that isn't a plausible Chinese or Latin surname character.
+  if (!/^[\u4e00-\u9fffA-Za-z]$/.test(first)) return "";
+  return `称呼要求:这位老师姓"${first}",请在回答中自然地以"${first}老师"称呼对方,不要询问姓名。`;
+}

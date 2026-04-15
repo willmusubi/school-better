@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClient, MODEL, SYSTEM_PROMPT } from "@/lib/anthropic";
+import { getClient, MODEL, SYSTEM_PROMPT, teacherAddressLine } from "@/lib/anthropic";
 import { getDocumentContext, addMessage } from "@/lib/store";
 
 const newId = () =>
@@ -9,10 +9,11 @@ const newId = () =>
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, notebookId } = await req.json();
+    const { message, notebookId, teacherSurname } = await req.json();
     if (!message || !notebookId) {
       return NextResponse.json({ error: "Missing message or notebookId" }, { status: 400 });
     }
+    const addressLine = teacherAddressLine(teacherSurname);
 
     // Save user message
     addMessage({
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       truncatedDocs.length > 0
         ? `\n\n[系统提示] 以下文档因长度超限只取了前 8000 字, 如答案不完整请提示用户分段提问: ${truncatedDocs.join(", ")}`
         : "";
-    const systemWithContext = `${SYSTEM_PROMPT}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`;
+    const systemWithContext = `${SYSTEM_PROMPT}${addressLine ? `\n\n${addressLine}` : ""}${truncationNote}\n\n=== 教师知识库内容 ===\n${docContext}\n=== 知识库结束 ===`;
 
     const client = getClient();
 
