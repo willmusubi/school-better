@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=820, initial-scale=1" />
+<title>教师百宝箱 · 产品介绍</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --zhusha-400: oklch(0.62 0.16 28);
+    --zhusha-500: oklch(0.54 0.19 26);
+    --zhusha-600: oklch(0.46 0.2 24);
+    --zhusha-700: oklch(0.38 0.18 22);
+    --ink-900: oklch(0.15 0.025 250);
+    --ink-800: oklch(0.22 0.02 250);
+    --ink-700: oklch(0.32 0.018 250);
+    --ink-600: oklch(0.42 0.012 250);
+    --ink-500: oklch(0.52 0.01 250);
+    --ink-400: oklch(0.62 0.008 250);
+    --ink-300: oklch(0.74 0.006 250);
+    --ink-200: oklch(0.86 0.004 250);
+    --ink-100: oklch(0.93 0.003 250);
+    --paper-50: oklch(0.99 0.006 80);
+    --paper-100: oklch(0.975 0.01 78);
+    --paper-200: oklch(0.955 0.015 76);
+    --paper-300: oklch(0.93 0.02 74);
+    --zhu-500: oklch(0.58 0.13 155);
+    --zhu-600: oklch(0.48 0.12 155);
+    --dian-500: oklch(0.5 0.13 260);
+    --dian-600: oklch(0.42 0.15 260);
+    --jin-500: oklch(0.68 0.15 75);
+
+    --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+    --sans: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+
+    --page-width: 820px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: var(--sans);
+    color: var(--ink-800);
+    background: var(--paper-200);
+    line-height: 1.75;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    background: var(--paper-100);
+    box-shadow: 0 0 60px oklch(0.2 0.02 250 / 0.06);
+  }
+
+  /* ——————— Hero ——————— */
+  .hero {
+    position: relative;
+    padding: 72px 56px 64px;
+    background:
+      radial-gradient(ellipse at top right, oklch(0.46 0.2 24 / 0.08), transparent 60%),
+      radial-gradient(ellipse at bottom left, oklch(0.5 0.13 260 / 0.05), transparent 50%),
+      var(--paper-50);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: 40px; right: 56px;
+    width: 6px; height: 40px;
+    background: var(--zhusha-600);
+    border-radius: 99px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 40px;
+  }
+  .brand-badge {
+    width: 52px; height: 52px;
+    background: var(--zhusha-600);
+    color: var(--paper-50);
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px oklch(0.46 0.2 24 / 0.25);
+  }
+  .brand-text { line-height: 1.2; }
+  .brand-text .cn {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--ink-900);
+    letter-spacing: 0.02em;
+  }
+  .brand-text .en {
+    font-size: 12px;
+    color: var(--ink-400);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--ink-900);
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--zhusha-600);
+    position: relative;
+  }
+  .hero h1 em::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 2px;
+    height: 10px;
+    background: oklch(0.54 0.19 26 / 0.15);
+    z-index: -1;
+  }
+  .hero .lead {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.9;
+    color: var(--ink-700);
+    max-width: 620px;
+    margin-bottom: 40px;
+  }
+  .hero-meta {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  .chip {
+    padding: 8px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .chip.zhusha {
+    background: oklch(0.46 0.2 24 / 0.08);
+    color: var(--zhusha-700);
+  }
+  .chip.zhu {
+    background: oklch(0.58 0.13 155 / 0.1);
+    color: var(--zhu-600);
+  }
+  .chip.dian {
+    background: oklch(0.5 0.13 260 / 0.08);
+    color: var(--dian-600);
+  }
+  .chip.jin {
+    background: oklch(0.68 0.15 75 / 0.14);
+    color: oklch(0.5 0.14 75);
+  }
+  .hero-img {
+    width: 100%;
+    display: block;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px oklch(0.2 0.02 250 / 0.15);
+    border: 1px solid var(--ink-100);
+  }
+
+  /* ——————— Section shell ——————— */
+  section {
+    padding: 72px 56px;
+  }
+  section + section { border-top: 1px solid oklch(0.86 0.004 250 / 0.5); }
+  .section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--ink-400);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .section-label::before {
+    content: "";
+    width: 18px; height: 2px; background: var(--zhusha-500);
+    border-radius: 99px;
+  }
+  section h2 {
+    font-family: var(--serif);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink-900);
+    margin-bottom: 12px;
+    letter-spacing: -0.005em;
+  }
+  section .sub {
+    font-size: 16px;
+    color: var(--ink-500);
+    margin-bottom: 40px;
+    line-height: 1.8;
+    max-width: 620px;
+  }
+
+  p { color: var(--ink-700); }
+  p + p { margin-top: 14px; }
+
+  /* ——————— 问题 section ——————— */
+  .pain-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    margin-top: 28px;
+  }
+  .pain-card {
+    background: var(--paper-50);
+    border: 1px solid var(--ink-100);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    position: relative;
+  }
+  .pain-card .num {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--zhusha-500);
+    line-height: 1;
+    opacity: 0.25;
+    position: absolute;
+    top: 20px; right: 24px;
+  }
+  .pain-card h3 {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin-bottom: 10px;
+  }
+  .pain-card p {
+    font-size: 14.5px;
+    line-height: 1.9;
+    color: var(--ink-600);
+  }
+
+  /* ——————— 解决方案 block ——————— */
+  .solution {
+    background: linear-gradient(135deg, oklch(0.46 0.2 24 / 0.04), oklch(0.5 0.13 260 / 0.03));
+    border: 1px solid oklch(0.46 0.2 24 / 0.15);
+    border-radius: 16px;
+    padding: 36px 40px;
+    position: relative;
+  }
+  .solution .quote-mark {
+    position: absolute;
+    top: 16px; left: 24px;
+    font-family: var(--serif);
+    font-size: 80px;
+    color: var(--zhusha-500);
+    opacity: 0.18;
+    line-height: 1;
+  }
+  .solution p {
+    font-family: var(--serif);
+    font-size: 22px;
+    line-height: 1.8;
+    color: var(--ink-900);
+    padding-left: 50px;
+    font-weight: 500;
+  }
+  .solution p strong {
+    color: var(--zhusha-700);
+    font-weight: 700;
+  }
+
+  /* ——————— 三栏 workflow图 ——————— */
+  .three-col {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px; margin-top: 28px;
+    font-size: 14px;
+  }
+  .three-col .col {
+    padding: 24px 20px;
+    border-radius: 12px;
+    background: var(--paper-50);
+    border-top: 3px solid var(--ink-200);
+  }
+  .three-col .col.left   { border-top-color: var(--jin-500); }
+  .three-col .col.center { border-top-color: var(--zhusha-500); }
+  .three-col .col.right  { border-top-color: var(--zhu-500); }
+  .three-col .col h4 {
+    font-family: var(--serif);
+    font-size: 17px;
+    margin-bottom: 12px;
+    color: var(--ink-900);
+  }
+  .three-col .col p {
+    font-size: 13.5px;
+    line-height: 1.85;
+    color: var(--ink-600);
+  }
+
+  /* ——————— Feature with screenshot ——————— */
+  .feat {
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 1px dashed var(--ink-200);
+  }
+  .feat:first-of-type { border-top: none; padding-top: 0; }
+  .feat h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin-bottom: 8px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .feat h3 .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    background: var(--zhusha-600);
+    color: var(--paper-50);
+    border-radius: 99px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    font-family: var(--sans);
+  }
+  .feat h3 .tag.dian { background: var(--dian-500); }
+  .feat h3 .tag.zhu  { background: var(--zhu-500); }
+  .feat .feat-desc {
+    font-size: 15px;
+    color: var(--ink-600);
+    line-height: 1.9;
+    margin-bottom: 20px;
+    max-width: 640px;
+  }
+  .feat ul {
+    list-style: none;
+    margin: 14px 0 20px;
+  }
+  .feat ul li {
+    padding-left: 22px;
+    position: relative;
+    font-size: 14px;
+    line-height: 2;
+    color: var(--ink-700);
+  }
+  .feat ul li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: 14px;
+    width: 6px; height: 6px;
+    background: var(--zhusha-500);
+    border-radius: 99px;
+  }
+  .feat img {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+    border: 1px solid var(--ink-100);
+    box-shadow: 0 8px 24px oklch(0.2 0.02 250 / 0.08);
+  }
+
+  /* ——————— 场景对比表 ——————— */
+  .compare {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-top: 28px;
+    font-size: 14px;
+    border: 1px solid var(--ink-100);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .compare thead th {
+    background: var(--paper-200);
+    padding: 14px 18px;
+    text-align: left;
+    font-family: var(--serif);
+    font-weight: 600;
+    color: var(--ink-800);
+    font-size: 14px;
+    border-bottom: 1px solid var(--ink-100);
+  }
+  .compare thead th:first-child { width: 140px; color: var(--ink-500); font-family: var(--sans); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; }
+  .compare thead th.after { color: var(--zhusha-700); }
+  .compare tbody td {
+    padding: 14px 18px;
+    vertical-align: top;
+    border-bottom: 1px solid oklch(0.93 0.003 250 / 0.6);
+    color: var(--ink-700);
+    line-height: 1.75;
+  }
+  .compare tbody tr:last-child td { border-bottom: none; }
+  .compare tbody td:first-child {
+    color: var(--ink-500);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding-top: 16px;
+  }
+  .compare tbody td.after {
+    background: oklch(0.46 0.2 24 / 0.04);
+    color: var(--ink-800);
+    font-weight: 500;
+  }
+
+  /* ——————— 价值三段 ——————— */
+  .value-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;
+    margin-top: 28px;
+  }
+  .value-card {
+    padding: 28px 24px 24px;
+    border-radius: 14px;
+    background: var(--paper-50);
+    border: 1px solid var(--ink-100);
+    position: relative;
+  }
+  .value-card.teachers  { border-top: 3px solid var(--zhusha-500); }
+  .value-card.school    { border-top: 3px solid var(--dian-500); }
+  .value-card.students  { border-top: 3px solid var(--zhu-500); }
+  .value-card h4 {
+    font-family: var(--serif);
+    font-size: 18px;
+    margin-bottom: 12px;
+    color: var(--ink-900);
+  }
+  .value-card .icon {
+    font-size: 22px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .value-card ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.95;
+  }
+  .value-card ul li {
+    padding-left: 16px;
+    position: relative;
+    color: var(--ink-600);
+    margin-bottom: 4px;
+  }
+  .value-card ul li::before {
+    content: "·";
+    position: absolute;
+    left: 4px; top: -3px;
+    color: var(--zhusha-500);
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .value-card .big {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--zhusha-600);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .value-card .big-sub {
+    font-size: 12px;
+    color: var(--ink-400);
+    margin-bottom: 14px;
+  }
+
+  /* ——————— 数据安全卡 ——————— */
+  .safety {
+    background: var(--ink-900);
+    color: var(--paper-100);
+    border-radius: 16px;
+    padding: 36px 40px;
+    margin-top: 16px;
+  }
+  .safety .section-label { color: oklch(0.68 0.15 75); }
+  .safety .section-label::before { background: var(--jin-500); }
+  .safety h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    margin-bottom: 18px;
+    color: var(--paper-50);
+  }
+  .safety ul {
+    list-style: none;
+    font-size: 14px;
+    line-height: 2;
+  }
+  .safety ul li {
+    padding-left: 22px;
+    position: relative;
+    color: oklch(0.74 0.006 250);
+  }
+  .safety ul li::before {
+    content: "✓";
+    position: absolute;
+    left: 0; top: 0;
+    color: var(--jin-500);
+    font-weight: 700;
+  }
+  .safety ul li strong {
+    color: var(--paper-50);
+    font-weight: 500;
+  }
+
+  /* ——————— 进展 ——————— */
+  .roadmap {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;
+    margin-top: 24px;
+  }
+  .rm-card {
+    padding: 24px 22px;
+    border-radius: 12px;
+    border: 1px solid var(--ink-100);
+    background: var(--paper-50);
+  }
+  .rm-card .phase {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    color: var(--zhusha-600);
+    margin-bottom: 8px;
+  }
+  .rm-card.now .phase    { color: var(--zhu-600); }
+  .rm-card.next .phase   { color: var(--dian-600); }
+  .rm-card.future .phase { color: oklch(0.55 0.05 260); }
+  .rm-card h4 {
+    font-family: var(--serif);
+    font-size: 15px;
+    margin-bottom: 14px;
+    color: var(--ink-900);
+  }
+  .rm-card ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--ink-600);
+  }
+  .rm-card ul li {
+    padding: 4px 0 4px 18px;
+    position: relative;
+  }
+  .rm-card.now ul li::before {
+    content: "✓";
+    position: absolute; left: 0;
+    color: var(--zhu-500);
+    font-weight: 700;
+  }
+  .rm-card.next ul li::before {
+    content: "◐";
+    position: absolute; left: 0;
+    color: var(--dian-500);
+  }
+  .rm-card.future ul li::before {
+    content: "○";
+    position: absolute; left: 0;
+    color: var(--ink-300);
+  }
+
+  /* ——————— 合作 footer ——————— */
+  .cta {
+    background: linear-gradient(135deg, var(--zhusha-600), var(--zhusha-700));
+    color: var(--paper-50);
+    padding: 56px 56px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: "";
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: oklch(0.99 0.006 80 / 0.08);
+  }
+  .cta::after {
+    content: "";
+    position: absolute;
+    bottom: -30px; left: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: oklch(0.99 0.006 80 / 0.05);
+  }
+  .cta h2 {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--paper-50);
+    position: relative;
+  }
+  .cta .cta-sub {
+    font-size: 15px;
+    line-height: 1.9;
+    color: oklch(0.93 0.003 250);
+    max-width: 540px;
+    margin: 0 auto 28px;
+    position: relative;
+  }
+  .cta .contact-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    max-width: 540px; margin: 0 auto;
+    position: relative;
+  }
+  .contact-item {
+    background: oklch(0.99 0.006 80 / 0.08);
+    border: 1px solid oklch(0.99 0.006 80 / 0.18);
+    padding: 18px 20px;
+    border-radius: 10px;
+    text-align: left;
+  }
+  .contact-item .label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: oklch(0.86 0.004 250);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .contact-item .value {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--paper-50);
+  }
+
+  /* ——————— 页眉 stamp ——————— */
+  .stamp {
+    font-family: var(--serif);
+    text-align: center;
+    padding: 20px 0 28px;
+    font-size: 11px;
+    color: var(--ink-400);
+    letter-spacing: 0.3em;
+  }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <!-- ——————— Hero ——————— -->
+  <section class="hero">
+    <div class="brand">
+      <div class="brand-badge">宝</div>
+      <div class="brand-text">
+        <div class="cn">教师百宝箱</div>
+        <div class="en">Teacher Toolbox</div>
+      </div>
+    </div>
+    <h1>
+      让 AI 为你的<em>每一份教学资料</em>服务
+    </h1>
+    <p class="lead">
+      教师上传自己的教材、试卷、教案，AI 只基于这些资料工作。
+      不是"又一个聊天机器人"，而是绑定你班级、你进度、你教研风格的教学助手。
+    </p>
+    <div class="hero-meta">
+      <span class="chip zhusha">首发：高中语文</span>
+      <span class="chip dian">支持 PDF / Word / 图片 / PPT</span>
+      <span class="chip zhu">数据隔离到笔记本</span>
+      <span class="chip jin">教师工作流原生适配</span>
+    </div>
+    <img class="hero-img" src="./bp-assets/02-notebook-chat.png" alt="教师百宝箱主界面" />
+  </section>
+
+  <!-- ——————— 问题 ——————— -->
+  <section>
+    <div class="section-label">一、问题</div>
+    <h2>为什么教师用不好现有的 AI？</h2>
+    <p class="sub">
+      我们跟一线教师聊下来，真实困境集中在两点。不是"AI 不够聪明"，而是"AI 不是为教师设计的"。
+    </p>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="num">01</div>
+        <h3>AI 不懂"我的教材"</h3>
+        <p>
+          教师用的是特定版本的教材、是自己班上刚考过的试卷、是有具体进度的单元。
+          通用 AI 给出的是"平均的好答案"，不是"贴着你班级当前情况的答案"。
+        </p>
+      </div>
+      <div class="pain-card">
+        <div class="num">02</div>
+        <h3>对话框不适配教学流程</h3>
+        <p>
+          备课、命题、改作业、预判学生提问 — 这些是教师每天的固定动作。
+          让教师自己把这些翻译成 prompt，摩擦极高，大多数老师坚持不过三天。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ——————— 解决方案 ——————— -->
+  <section>
+    <div class="section-label">二、解决方案</div>
+    <h2>把 AI 重新接到教师的资料和工作流上</h2>
+    <p class="sub">
+      我们做了两件事：建立"属于教师自己的知识库"，把常见教学任务做成"一键工具"。
+    </p>
+    <div class="solution">
+      <div class="quote-mark">"</div>
+      <p>
+        教师上传教材、试卷、教案 — 形成<strong>个人知识库</strong>。
+        AI 在任何回答、任何生成中，<strong>只基于这个知识库工作</strong>。
+      </p>
+    </div>
+    <div class="three-col">
+      <div class="col left">
+        <h4>左栏 · 知识库</h4>
+        <p>上传你的教材、试卷、教案、教学反思。AI 自动分类、自动摘要。</p>
+      </div>
+      <div class="col center">
+        <h4>中栏 · 对话</h4>
+        <p>基于知识库提问，流式回答。回答里出现的每个观点，你都能追溯到源文档。</p>
+      </div>
+      <div class="col right">
+        <h4>右栏 · 百宝箱</h4>
+        <p>测验生成、模拟学生提问、课程设计 — 一键完成教师最常做的三件事。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ——————— 核心场景 · 知识库 ——————— -->
+  <section>
+    <div class="section-label">三、核心场景</div>
+    <h2>知识库：每个笔记本一个独立命名空间</h2>
+    <p class="sub">
+      你可以为"高一必修上"、"高三一轮复习"、"文言文专题"各开一本。
+      笔记本之间资料完全隔离，不串台、不泄露。
+    </p>
+    <img src="./bp-assets/01-home.png" alt="笔记本列表" style="width:100%;border-radius:12px;border:1px solid var(--ink-100);box-shadow:0 8px 24px oklch(0.2 0.02 250 / 0.08);" />
+    <div style="margin-top: 28px;">
+      <div class="feat" style="border-top: none; padding-top: 0; margin-top: 0;">
+        <h3>多格式资料统一入库</h3>
+        <p class="feat-desc">拖拽上传，后台异步解析，前端实时显示进度。</p>
+        <ul>
+          <li>PDF 教材 / 试卷 — 按页提取正文</li>
+          <li>Word 教案 / 教研记录 — 保留段落结构</li>
+          <li>扫描版试卷 / 拍照的板书 — 走视觉大模型 OCR，按题号结构化</li>
+          <li>网页链接 / 粘贴纯文本 — 也能入库</li>
+          <li>自动分类：教材 / 试卷 / 教案 / 教学反思 / 其他</li>
+        </ul>
+        <img src="./bp-assets/06-add-source.png" alt="添加资料" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ——————— 教学百宝箱 · 三件套 ——————— -->
+  <section>
+    <div class="section-label">四、教学百宝箱</div>
+    <h2>把"常做的事"变成"一键做完的事"</h2>
+    <p class="sub">
+      不用写 prompt，不用调 AI。教师选几个参数，其余由系统基于你的知识库完成。
+    </p>
+
+    <div class="feat">
+      <h3>测验生成 <span class="tag dian">核心</span></h3>
+      <p class="feat-desc">
+        基于你上传的教材和试卷自动出题。题目紧贴你班级学过的内容，而不是万能题库。
+      </p>
+      <ul>
+        <li>可选问题数量：5–8 / 10–12 / 15–20 题</li>
+        <li>可选难度：基础识记 / 基础+理解+分析 / 综合分析与鉴赏</li>
+        <li>支持指定主题范围（"只考必修上册第七单元"）</li>
+        <li>输出含题号、题型、分值、参考答案、评分标准</li>
+      </ul>
+      <img src="./bp-assets/03-tool-quiz.png" alt="测验生成" />
+    </div>
+
+    <div class="feat">
+      <h3>模拟学生提问 <span class="tag">核心</span></h3>
+      <p class="feat-desc">
+        备课时先预演一遍学生会怎么问。节省课堂上被意外问题卡住的尴尬。
+      </p>
+      <ul>
+        <li>可选学生类型：优等生 / 中等生 / 学困生 / 混合</li>
+        <li>生成 8–12 个真实学生会问的问题</li>
+        <li>每个问题附教师应对建议与讲解要点</li>
+        <li>帮助青年教师预判课堂难点、打磨教学语言</li>
+      </ul>
+      <img src="./bp-assets/04-tool-student-sim.png" alt="模拟学生提问" />
+    </div>
+
+    <div class="feat">
+      <h3>课程设计 <span class="tag zhu">核心</span></h3>
+      <p class="feat-desc">
+        一键生成完整教案框架，节省找模板、抄别人教案、改格式的时间。
+      </p>
+      <ul>
+        <li>三维目标（知识与能力 / 过程与方法 / 情感态度）</li>
+        <li>教学重难点提取</li>
+        <li>五环节课时安排：导入 / 整体感知 / 深入研读 / 拓展延伸 / 总结作业</li>
+        <li>每个环节含教师活动 + 学生活动</li>
+        <li>板书设计 + 教学反思预留</li>
+      </ul>
+      <img src="./bp-assets/05-tool-lesson.png" alt="课程设计" />
+    </div>
+  </section>
+
+  <!-- ——————— 使用场景 ——————— -->
+  <section>
+    <div class="section-label">五、使用场景</div>
+    <h2>一位语文老师的一天</h2>
+    <p class="sub">以下是真实教师使用百宝箱前后的时间对比。</p>
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>场景</th>
+          <th>使用前</th>
+          <th class="after">使用百宝箱</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>备《赤壁赋》一节课</td>
+          <td>翻教参、找网上教案、拼接修改 · 90–120 分钟</td>
+          <td class="after">上传原文，一键生成教案框架 + 模拟学生提问 · 15 分钟</td>
+        </tr>
+        <tr>
+          <td>出一份单元月考卷</td>
+          <td>从题库找题、调整难度、对齐单元重点 · 3–4 小时</td>
+          <td class="after">指定单元范围 + 难度，直接生成完整试卷 · 20 分钟审题微调</td>
+        </tr>
+        <tr>
+          <td>预判学生疑难点</td>
+          <td>凭经验，青年教师往往漏判 · 经常被课堂追问</td>
+          <td class="after">备课时先模拟 10 个学生提问，心中有数 · 15 分钟</td>
+        </tr>
+        <tr>
+          <td>整理单元复习资料</td>
+          <td>翻几节课的教案、笔记、反思 · 1–2 小时</td>
+          <td class="after">问一句"整理本单元文言文知识点" · AI 跨资料整理 · 3 分钟</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ——————— 价值 ——————— -->
+  <section>
+    <div class="section-label">六、价值</div>
+    <h2>给老师、给学校、给学生</h2>
+    <p class="sub">教育工具的价值，最终要落到三个层面。</p>
+    <div class="value-grid">
+      <div class="value-card teachers">
+        <span class="icon">📝</span>
+        <div class="big">减负 60%+</div>
+        <div class="big-sub">备课 / 出卷 / 整理环节</div>
+        <h4>给老师</h4>
+        <ul>
+          <li>重复性工作交给 AI</li>
+          <li>把时间留给真正面对学生</li>
+          <li>青年教师快速补齐经验短板</li>
+          <li>教研组可共享知识库</li>
+        </ul>
+      </div>
+      <div class="value-card school">
+        <span class="icon">🏫</span>
+        <div class="big">沉淀</div>
+        <div class="big-sub">学校教学资产数字化</div>
+        <h4>给学校</h4>
+        <ul>
+          <li>优秀教师的教案不再随离职流失</li>
+          <li>教研成果可跨年级、跨届复用</li>
+          <li>青年教师培养提速</li>
+          <li>教学过程留痕，便于教研督导</li>
+        </ul>
+      </div>
+      <div class="value-card students">
+        <span class="icon">📚</span>
+        <div class="big">个性化</div>
+        <div class="big-sub">基于自己班级的内容</div>
+        <h4>给学生</h4>
+        <ul>
+          <li>接触到更贴合自己进度的练习</li>
+          <li>老师有精力做个性化辅导</li>
+          <li>课堂提问得到更充分准备的回答</li>
+          <li>教学内容质量稳定性提升</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ——————— 数据安全 ——————— -->
+  <section>
+    <div class="section-label">七、数据安全与合规</div>
+    <h2>学校最关心的事，我们提前想清楚了</h2>
+    <p class="sub">
+      教育数据是敏感数据。学生信息、教师教案、班级考情 — 任何一项出问题，都是不可逆的。
+    </p>
+    <div class="safety">
+      <div class="section-label">数据治理</div>
+      <h3>五项承诺</h3>
+      <ul>
+        <li><strong>数据隔离</strong> · 每位教师的知识库独立，不与他人混合，不用于训练公共模型</li>
+        <li><strong>教师可控</strong> · 上传、删除、导出完全由教师自主决定，随时可清空</li>
+        <li><strong>最小化原则</strong> · 系统只读取必要内容，不收集学生个人身份信息</li>
+        <li><strong>操作留痕</strong> · 所有上传、提问、生成记录可查，便于学校内审</li>
+        <li><strong>本地部署可选</strong> · 面向学校客户提供私有化部署方案，数据不出校园网</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ——————— 进展与规划 ——————— -->
+  <section>
+    <div class="section-label">八、进展与规划</div>
+    <h2>我们走到哪里了</h2>
+    <p class="sub">目前 v0.1 MVP 已完成，核心流程全部跑通，正在邀请首批合作学校试用。</p>
+    <div class="roadmap">
+      <div class="rm-card now">
+        <div class="phase">已完成 · v0.1</div>
+        <h4>核心可用</h4>
+        <ul>
+          <li>三栏工作台</li>
+          <li>多格式知识库上传</li>
+          <li>AI 自动分类 + OCR</li>
+          <li>流式对话 + 历史持久化</li>
+          <li>三大教学工具</li>
+          <li>中文输入法优化</li>
+        </ul>
+      </div>
+      <div class="rm-card next">
+        <div class="phase">进行中 · v0.2</div>
+        <h4>合作校试点</h4>
+        <ul>
+          <li>账号体系 + 教研组协作</li>
+          <li>知识库检索增强（RAG）</li>
+          <li>学校私有部署版本</li>
+          <li>上传进度实时反馈</li>
+          <li>管理员后台 · 使用统计</li>
+        </ul>
+      </div>
+      <div class="rm-card future">
+        <div class="phase">规划中 · v0.3+</div>
+        <h4>科目与场景扩展</h4>
+        <ul>
+          <li>数学 / 英语 / 历史 适配</li>
+          <li>移动端 App</li>
+          <li>学生家长端 · 个性化推荐</li>
+          <li>跨校教研联合体</li>
+          <li>AI 批改作业辅助</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ——————— CTA ——————— -->
+  <section class="cta">
+    <h2>诚邀首批合作学校</h2>
+    <p class="cta-sub">
+      面向公立 / 民办高中开放试点，提供定制化培训、专属对接、数据安全保障。<br />
+      如果您所在的学校希望率先引入 AI 教学助手，欢迎联系我们。
+    </p>
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="label">项目负责人</div>
+        <div class="value">刘彤 · 创始人</div>
+      </div>
+      <div class="contact-item">
+        <div class="label">合作咨询</div>
+        <div class="value">微信添加后详谈</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="stamp">教师百宝箱 · 2026</div>
+
+</main>
+</body>
+</html>
