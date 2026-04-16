@@ -68,19 +68,16 @@ const TOOLS: Tool[] = [
     accentLight: "bg-zhu-500/8",
     accentText: "text-zhu-500",
   },
-  // ---- Placeholders (disabled) ----
   {
     id: "essay-grade",
-    disabled: true,
     name: "作文批改",
-    desc: "按上传的评分标准批改学生作文",
+    desc: "按高考评分标准批改学生作文",
     iconPath: "M12 20h9",
     iconExtra: "M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z",
-    accentLight: "bg-paper-300/60",
-    accentText: "text-ink-400",
-    tag: "待开发",
-    tagColor: PLACEHOLDER_TAG_COLOR,
+    accentLight: "bg-jin-500/8",
+    accentText: "text-jin-500",
   },
+  // ---- Placeholders (disabled) ----
   {
     id: "exam-review",
     disabled: true,

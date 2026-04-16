@@ -47,7 +47,7 @@
 
 | 左栏 · 知识库来源 | 中栏 · 对话 | 右栏 · 教学百宝箱 |
 | :--- | :--- | :--- |
-| 上传 PDF / Word / 图片 / PPT；自动按教材/试卷/教案/教学反思分组 | 基于知识库的流式问答；支持 Markdown 渲染、中文 IME 安全回车、回到底部按钮 | 一键调用测验生成、模拟学生提问、课程设计三大工具 |
+| 上传 PDF / Word / 图片 / PPT；自动按教材/试卷/教案/教学反思分组 | 基于知识库的流式问答；支持 Markdown 渲染、中文 IME 安全回车、回到底部按钮 | 一键调用测验生成、模拟学生提问、课程设计、**作文批改**四大工具 |
 
 <img src="docs/screenshots/02-notebook-chat.png" alt="三栏工作台" width="880" />
 
@@ -70,7 +70,7 @@
 - **智能自动滚动**：长回答自动跟随；用户上滚阅读时停止跟随，并显示"回到底部"按钮
 - **知识库截断告警**：若上传文档内容超过 8000 字进入上下文的部分，顶部会出现黄色 banner 提示
 
-### 2.5 教学百宝箱（右栏·三件套）
+### 2.5 教学百宝箱（右栏·四件套）
 
 #### ① 测验生成
 <img src="docs/screenshots/03-tool-quiz.png" alt="测验生成" width="780" />
@@ -87,6 +87,24 @@
 
 一键生成教案框架：课题 → 三维目标 → 重难点 → 课时安排 → 五环节教学过程（导入 / 感知 / 研读 / 拓展 / 总结）→ 板书设计 → 反思预留。每个环节都含教师活动 + 学生活动。
 
+#### ④ 作文批改（新）
+
+按**全国卷高考作文评分标准（60分制）**批改学生作文。两个专精 AI Agent 分工协作：
+
+- **Agent 1 · 视觉识别**：上传手写作文图片 → AI 逐字提取文字（保留错别字原样，无法辨认用□标注）
+- **教师 Checkpoint**：识别结果填入文本框，教师检查/修正后再提交
+- **Agent 2 · 评分批改**：按评分标准逐维度打分 + 生成批改报告
+
+支持**直接粘贴文本**或**上传手写图片**两种输入方式。可选批改侧重（综合评价 / 内容立意 / 语言表达 / 结构布局）。
+
+**评分标准内嵌 prompt**，覆盖完整高考评分体系：
+- 基础等级：内容（20分）+ 表达（20分），各分四个等级
+- 发展等级（20分）：深刻 / 丰富 / 文采 / 创意
+- 扣分项：错别字、缺标题、字数不足、套作、抄袭
+- 评分原则：等级不跨越、文体上限等约束
+
+**输出结构**：总分 + 三维度得分表 → 扣分项 → 各维度详评（引用原文佐证）→ 优点 → 问题与建议 → 修改方向
+
 ---
 
 ## 三、技术栈
@@ -97,7 +115,7 @@
 | **LLM** | **双 provider 抽象层**：Claude (Anthropic) 或 Kimi (Moonshot),UI 里一键切换 |
 | **默认模型** | Claude: `claude-sonnet-4-6` / Kimi: `kimi-k2-thinking`(思考模型) |
 | **SDK** | `@anthropic-ai/sdk` 0.88 (Claude) · 纯 `fetch` OpenAI-compatible (Kimi,零 SDK 依赖) |
-| **文档解析** | `pdf-parse`（PDF）、`mammoth`/`officeparser`（docx/pptx）、`word-extractor`（旧版 .doc）、Claude Vision（图片 OCR） |
+| **文档解析** | `pdf-parse`（PDF）、`mammoth`/`officeparser`（docx/pptx）、`word-extractor`（旧版 .doc）、Claude Vision / Kimi K2.5（图片 OCR，跟随 provider 设置） |
 | **UI** | Tailwind 4 + OKLCH 自定义色板（朱砂 / 竹 / 靛 / 金 / 宣纸），Noto Serif SC 衬线字体 |
 | **状态** | React hooks · 单文件 JSON 持久化（MVP）· 会迁 SQLite |
 | **网络** | 内置 undici EnvHttpProxyAgent，自动拾取 `https_proxy` 环境变量（国内网络友好） |
@@ -109,7 +127,8 @@ src/
 ├── app/
 │   ├── api/
 │   │   ├── chat/route.ts              # 聊天流式端点，支持 AbortSignal
-│   │   ├── tool/route.ts              # 三件套统一端点
+│   │   ├── tool/route.ts              # 四件套统一端点
+│   │   ├── ocr/route.ts              # 手写作文图片 → 文字（视觉模型 OCR）
 │   │   ├── followups/route.ts         # 每次回答后生成 3 个动态追问
 │   │   ├── settings/route.ts          # UI 里配 provider/API key 的后端
 │   │   ├── upload/route.ts            # 文件上传 + 解析 + 分类
@@ -120,8 +139,8 @@ src/
 ├── components/
 │   ├── chat-panel.tsx                 # 中栏（流式 + 停止 + 历史 + IME + 追问胶囊）
 │   ├── sources-panel.tsx              # 左栏
-│   ├── studio-panel.tsx               # 右栏（3 活 + 3 待开发)
-│   ├── tool-slide-over.tsx            # 三个工具 modal
+│   ├── studio-panel.tsx               # 右栏（4 活 + 2 待开发)
+│   ├── tool-slide-over.tsx            # 四个工具 modal（含作文批改 OCR 上传）
 │   ├── profile-menu.tsx               # 右上角姓氏 / AI 配置入口
 │   ├── settings-modal.tsx             # AI 配置模态框
 │   ├── markdown.tsx                   # 共享 Markdown 渲染器(含表格)
@@ -213,7 +232,7 @@ npm run dev
 3. 等待左栏图标由 ⏳(解析中) 变为 ✓(就绪)。每份文档 AI 自动判断是教材/试卷/教案,并生成 50 字摘要,通常 10-60 秒
 4. 中栏随便问一句,比如"**总结我上传的资料要点**"或"**帮我分析《青蒿素》这篇课文的论证思路**"
 5. 回答完成后,下方会出现 3 个**动态追问按钮**,点一下自动作为下一条消息发送
-6. 右栏点 **"测验生成"** / **"模拟学生提问"** / **"课程设计"** 任一工具,体验基于你知识库的一键生成
+6. 右栏点 **"测验生成"** / **"模拟学生提问"** / **"课程设计"** / **"作文批改"** 任一工具,体验基于你知识库的一键生成
 
 完整走一遍应该在 15 分钟内。如果卡住了看下面。
 
@@ -295,12 +314,16 @@ LLM_PROVIDER=moonshot
 MOONSHOT_API_KEY=sk-xxxxxxxxxxxxxxxx
 MOONSHOT_BASE_URL=https://api.moonshot.cn/v1
 
-# Anthropic(图片 OCR 仍用这个,所以即使 LLM_PROVIDER=moonshot 也建议填)
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
+# Anthropic(可选,如果 provider=moonshot 则仅图片上传解析会用到)
+# ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
 
 # 可选:模型覆盖
 # LLM_CHAT_MODEL=kimi-k2.5
 # LLM_FOLLOWUP_MODEL=kimi-k2-turbo-preview
+
+# 可选:视觉模型覆盖(手写作文 OCR + 图片上传解析)
+# MOONSHOT_VISION_MODEL=kimi-k2.5
+# ANTHROPIC_VISION_MODEL=claude-sonnet-4-6
 
 # 可选:上传大小限制(默认 25MB)
 # NEXT_PUBLIC_MAX_UPLOAD_MB=50
@@ -337,6 +360,12 @@ ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
 - [x] 三个教学工具（测验 / 模拟学生 / 教案）
 - [x] 中文 IME 安全、长回答滚动、智能自动滚动
 - [x] 知识库截断告警
+
+### 已完成（v0.1.1）
+
+- [x] **作文批改**：全国卷高考60分制评分标准内嵌 prompt，结构化评分报告
+- [x] **手写识别**：上传手写作文图片 → 视觉模型 OCR → 教师确认 → 提交批改（双 Agent 架构）
+- [x] **OCR 跟随 provider**：Anthropic 用 Claude Vision，Moonshot 用 Kimi K2.5，不再强制依赖 Anthropic
 
 ### 下一步（v0.2）
 

@@ -8,7 +8,7 @@ import { StudioPanel } from "@/components/studio-panel";
 import { ToolSlideOver } from "@/components/tool-slide-over";
 import { NotebookTopBar } from "@/components/notebook-topbar";
 
-export type ToolId = "quiz" | "student-sim" | "lesson" | null;
+export type ToolId = "quiz" | "student-sim" | "lesson" | "essay-grade" | null;
 
 interface Notebook {
   id: string;
